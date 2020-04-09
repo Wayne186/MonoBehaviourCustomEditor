@@ -117,12 +117,12 @@ public class MonoBehaviourCustomEditor : Editor
     /// <param name="oldValue"></param>
     /// <param name="fieldList"></param>
     /// <returns></returns>
-    public delegate object DrawParameter(InspectedField inspectedParameter, string label, Type valueType, object oldValue, List<InspectedField> fieldList);
+    public delegate object DrawInspectedField(InspectedField inspectedParameter, string label, Type valueType, object oldValue, List<InspectedField> fieldList);
 
     /// <summary>
     /// Type and the type drawer method map
     /// </summary>
-    readonly Dictionary<Type, DrawParameter> DrawerMap = new Dictionary<Type, DrawParameter>
+    readonly Dictionary<Type, DrawInspectedField> DrawerMap = new Dictionary<Type, DrawInspectedField>
     {
         {typeof(bool), DrawBool},
         {typeof(int), DrawInt},
@@ -278,7 +278,7 @@ public class MonoBehaviourCustomEditor : Editor
             }
         }
 
-        DrawParameter drawer;
+        DrawInspectedField drawer;
         var hasTypeDrawer = DrawerMap.TryGetValue(valueType, out drawer);
         if (hasTypeDrawer)
         {
