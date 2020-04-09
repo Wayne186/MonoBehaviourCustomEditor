@@ -3,14 +3,12 @@ using UnityEditor;
 using System.Reflection;
 using System.Collections.Generic;
 using System;
-using System.Linq;
 
 /// <summary>
 /// The data structured for saving necessary informations for drawing a unknown-type field in inspector
 /// </summary>
 public class InspectedField
 {
-    internal string MethodName;
     internal string Label;
     internal object Value;
     internal bool IsInspected;
@@ -18,16 +16,14 @@ public class InspectedField
 
     internal InspectedField()
     {
-        MethodName = "";
         Label = "";
         Value = new object();
         IsInspected = false;
         FieldType = null;
     }
 
-    internal InspectedField(string methodName, string label, object value, bool isInspected, Type fieldType)
+    internal InspectedField(string label, object value, bool isInspected, Type fieldType)
     {
-        MethodName = methodName;
         Label = label;
         Value = value;
         IsInspected = isInspected;
@@ -40,7 +36,7 @@ public class InspectedField
 public class MonoBehaviourCustomEditor : Editor
 {
     List<InspectedField> InspectedParameters = new List<InspectedField>();
-    public delegate object DrawParameter(InspectedField inspectedParameter, string methodName, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters);
+    public delegate object DrawParameter(InspectedField inspectedParameter, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters);
 
     readonly Dictionary<Type, DrawParameter> DrawerMap = new Dictionary<Type, DrawParameter>
     {
@@ -96,7 +92,7 @@ public class MonoBehaviourCustomEditor : Editor
                 foreach (var para in parameters)
                 {
                     System.Object obj;
-                    if (DrawField(method.Name, para.ParameterType, para.Name, out obj))
+                    if (DrawField(para.ParameterType, para.Name, out obj))
                     {
                         parameterList.Add(obj);
                     }
@@ -126,7 +122,7 @@ public class MonoBehaviourCustomEditor : Editor
         }
     }
 
-    public bool DrawField(string methodName, Type valueType, string label, out object returnValue)
+    public bool DrawField(Type valueType, string label, out object returnValue)
     {
         bool isDrawn = true;
         object oldValue = new object();
@@ -135,7 +131,7 @@ public class MonoBehaviourCustomEditor : Editor
         InspectedField inspectedParameter = null;
         foreach (var para in InspectedParameters)
         {
-            if (para.MethodName.Equals(methodName) && para.Label.Equals(label) && para.FieldType == valueType)
+            if (para.Label.Equals(label) && para.FieldType == valueType)
             {
                 para.IsInspected = true;
                 inspectedParameter = para;
@@ -148,19 +144,19 @@ public class MonoBehaviourCustomEditor : Editor
         var hasTypeDrawer = DrawerMap.TryGetValue(valueType, out drawer);
         if (hasTypeDrawer)
         {
-            returnValue = drawer.Invoke(inspectedParameter, methodName, label, valueType, oldValue, InspectedParameters);
+            returnValue = drawer.Invoke(inspectedParameter, label, valueType, oldValue, InspectedParameters);
         }
         else if (typeof(UnityEngine.Object).IsAssignableFrom(valueType))
         {
-            returnValue = DrawObject(inspectedParameter, methodName, label, valueType, oldValue, InspectedParameters);
+            returnValue = DrawObject(inspectedParameter, label, valueType, oldValue, InspectedParameters);
         }
         else if (typeof(UnityEngine.Component).IsAssignableFrom(valueType))
         {
-            returnValue = DrawComponent(inspectedParameter, methodName, label, valueType, oldValue, InspectedParameters);
+            returnValue = DrawComponent(inspectedParameter, label, valueType, oldValue, InspectedParameters);
         }
         else if (valueType.BaseType == typeof(Enum))
         {
-            returnValue = DrawEnum(inspectedParameter, methodName, label, valueType, oldValue, InspectedParameters);
+            returnValue = DrawEnum(inspectedParameter, label, valueType, oldValue, InspectedParameters);
         }
         else
         {
@@ -179,12 +175,12 @@ public class MonoBehaviourCustomEditor : Editor
     /// <param name="valueType"></param>
     /// <param name="oldValue"></param>
     /// <returns></returns>
-    internal static object DrawBool(InspectedField inspectedParameter, string methodName, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters)
+    internal static object DrawBool(InspectedField inspectedParameter, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters)
     {
         if (inspectedParameter == null) // it's a newly add parameter for inspecting
         {
             //Make a new InspectedField and add it to the list.
-            InspectedField iField = new InspectedField(methodName, label, false, true, valueType);
+            InspectedField iField = new InspectedField(label, false, true, valueType);
             inspectedParameters.Add(iField);
 
             return EditorGUILayout.Toggle(label, false);
@@ -216,12 +212,12 @@ public class MonoBehaviourCustomEditor : Editor
     /// <param name="valueType"></param>
     /// <param name="oldValue"></param>
     /// <returns></returns>
-    internal static object DrawInt(InspectedField inspectedParameter, string methodName, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters)
+    internal static object DrawInt(InspectedField inspectedParameter, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters)
     {
         if (inspectedParameter == null) // it's a newly add parameter for inspecting
         {
             //Make a new InspectedField and add it to the list.
-            InspectedField iField = new InspectedField(methodName, label, 0, true, valueType);
+            InspectedField iField = new InspectedField(label, 0, true, valueType);
             inspectedParameters.Add(iField);
 
             return EditorGUILayout.IntField(label, 0);
@@ -253,12 +249,12 @@ public class MonoBehaviourCustomEditor : Editor
     /// <param name="valueType"></param>
     /// <param name="oldValue"></param>
     /// <returns></returns>
-    internal static object DrawLong(InspectedField inspectedParameter, string methodName, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters)
+    internal static object DrawLong(InspectedField inspectedParameter, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters)
     {
         if (inspectedParameter == null) // it's a newly add parameter for inspecting
         {
             //Make a new InspectedField and add it to the list.
-            InspectedField iField = new InspectedField(methodName, label, (long)0, true, valueType);
+            InspectedField iField = new InspectedField(label, (long)0, true, valueType);
             inspectedParameters.Add(iField);
 
             return EditorGUILayout.LongField(label, 0);
@@ -290,12 +286,12 @@ public class MonoBehaviourCustomEditor : Editor
     /// <param name="valueType"></param>
     /// <param name="oldValue"></param>
     /// <returns></returns>
-    internal static object DrawFloat(InspectedField inspectedParameter, string methodName, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters)
+    internal static object DrawFloat(InspectedField inspectedParameter, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters)
     {
         if (inspectedParameter == null) // it's a newly add parameter for inspecting
         {
             //Make a new InspectedField and add it to the list.
-            InspectedField iField = new InspectedField(methodName, label, 0.0f, true, valueType);
+            InspectedField iField = new InspectedField(label, 0.0f, true, valueType);
             inspectedParameters.Add(iField);
 
             return EditorGUILayout.FloatField(label, 0.0f);
@@ -327,12 +323,12 @@ public class MonoBehaviourCustomEditor : Editor
     /// <param name="valueType"></param>
     /// <param name="oldValue"></param>
     /// <returns></returns>
-    internal static object DrawDouble(InspectedField inspectedParameter, string methodName, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters)
+    internal static object DrawDouble(InspectedField inspectedParameter, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters)
     {
         if (inspectedParameter == null) // it's a newly add parameter for inspecting
         {
             //Make a new InspectedField and add it to the list.
-            InspectedField iField = new InspectedField(methodName, label, 0.0, true, valueType);
+            InspectedField iField = new InspectedField(label, 0.0, true, valueType);
             inspectedParameters.Add(iField);
 
             return EditorGUILayout.DoubleField(label, 0.0);
@@ -364,12 +360,12 @@ public class MonoBehaviourCustomEditor : Editor
     /// <param name="valueType"></param>
     /// <param name="oldValue"></param>
     /// <returns></returns>
-    internal static object DrawString(InspectedField inspectedParameter, string methodName, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters)
+    internal static object DrawString(InspectedField inspectedParameter, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters)
     {
         if (inspectedParameter == null) // it's a newly add parameter for inspecting
         {
             //Make a new InspectedField and add it to the list.
-            InspectedField iField = new InspectedField(methodName, label, String.Empty, true, valueType);
+            InspectedField iField = new InspectedField(label, String.Empty, true, valueType);
             inspectedParameters.Add(iField);
 
             return EditorGUILayout.TextField(label, String.Empty);
@@ -401,12 +397,12 @@ public class MonoBehaviourCustomEditor : Editor
     /// <param name="valueType"></param>
     /// <param name="oldValue"></param>
     /// <returns></returns>
-    internal static object DrawVector2(InspectedField inspectedParameter, string methodName, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters)
+    internal static object DrawVector2(InspectedField inspectedParameter, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters)
     {
         if (inspectedParameter == null) // it's a newly add parameter for inspecting
         {
             //Make a new InspectedField and add it to the list.
-            InspectedField iField = new InspectedField(methodName, label, Vector2.zero, true, valueType);
+            InspectedField iField = new InspectedField(label, Vector2.zero, true, valueType);
             inspectedParameters.Add(iField);
 
             return EditorGUILayout.Vector2Field(label, Vector2.zero);
@@ -438,12 +434,12 @@ public class MonoBehaviourCustomEditor : Editor
     /// <param name="valueType"></param>
     /// <param name="oldValue"></param>
     /// <returns></returns>
-    internal static object DrawVector3(InspectedField inspectedParameter, string methodName, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters)
+    internal static object DrawVector3(InspectedField inspectedParameter, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters)
     {
         if (inspectedParameter == null) // it's a newly add parameter for inspecting
         {
             //Make a new InspectedField and add it to the list.
-            InspectedField iField = new InspectedField(methodName, label, Vector3.zero, true, valueType);
+            InspectedField iField = new InspectedField(label, Vector3.zero, true, valueType);
             inspectedParameters.Add(iField);
 
             return EditorGUILayout.Vector3Field(label, Vector3.zero);
@@ -475,12 +471,12 @@ public class MonoBehaviourCustomEditor : Editor
     /// <param name="valueType"></param>
     /// <param name="oldValue"></param>
     /// <returns></returns>
-    internal static object DrawVector4(InspectedField inspectedParameter, string methodName, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters)
+    internal static object DrawVector4(InspectedField inspectedParameter, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters)
     {
         if (inspectedParameter == null) // it's a newly add parameter for inspecting
         {
             //Make a new InspectedField and add it to the list.
-            InspectedField iField = new InspectedField(methodName, label, Vector4.zero, true, valueType);
+            InspectedField iField = new InspectedField(label, Vector4.zero, true, valueType);
             inspectedParameters.Add(iField);
 
             return EditorGUILayout.Vector4Field(label, Vector4.zero);
@@ -512,12 +508,12 @@ public class MonoBehaviourCustomEditor : Editor
     /// <param name="valueType"></param>
     /// <param name="oldValue"></param>
     /// <returns></returns>
-    internal static object DrawColor(InspectedField inspectedParameter, string methodName, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters)
+    internal static object DrawColor(InspectedField inspectedParameter, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters)
     {
         if (inspectedParameter == null) // it's a newly add parameter for inspecting
         {
             //Make a new InspectedField and add it to the list.
-            InspectedField iField = new InspectedField(methodName, label, Color.white, true, valueType);
+            InspectedField iField = new InspectedField(label, Color.white, true, valueType);
             inspectedParameters.Add(iField);
 
             return EditorGUILayout.ColorField(label, Color.white);
@@ -549,14 +545,14 @@ public class MonoBehaviourCustomEditor : Editor
     /// <param name="valueType"></param>
     /// <param name="oldValue"></param>
     /// <returns></returns>
-    internal static object DrawBounds(InspectedField inspectedParameter, string methodName, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters)
+    internal static object DrawBounds(InspectedField inspectedParameter, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters)
     {
         Bounds bound = new Bounds();
 
         if (inspectedParameter == null) // it's a newly add parameter for inspecting
         {
             //Make a new InspectedField and add it to the list.
-            InspectedField iField = new InspectedField(methodName, label, bound, true, valueType);
+            InspectedField iField = new InspectedField(label, bound, true, valueType);
             inspectedParameters.Add(iField);
 
             return EditorGUILayout.BoundsField(label, bound);
@@ -588,12 +584,12 @@ public class MonoBehaviourCustomEditor : Editor
     /// <param name="valueType"></param>
     /// <param name="oldValue"></param>
     /// <returns></returns>
-    internal static object DrawRect(InspectedField inspectedParameter, string methodName, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters)
+    internal static object DrawRect(InspectedField inspectedParameter, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters)
     {
         if (inspectedParameter == null) // it's a newly add parameter for inspecting
         {
             //Make a new InspectedField and add it to the list.
-            InspectedField iField = new InspectedField(methodName, label, Rect.zero, true, valueType);
+            InspectedField iField = new InspectedField(label, Rect.zero, true, valueType);
             inspectedParameters.Add(iField);
 
             return EditorGUILayout.RectField(label, Rect.zero);
@@ -625,14 +621,14 @@ public class MonoBehaviourCustomEditor : Editor
     /// <param name="valueType"></param>
     /// <param name="oldValue"></param>
     /// <returns></returns>
-    internal static object DrawObject(InspectedField inspectedParameter, string methodName, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters)
+    internal static object DrawObject(InspectedField inspectedParameter, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters)
     {
         UnityEngine.Object obj = new UnityEngine.Object();
 
         if (inspectedParameter == null) // it's a newly add parameter for inspecting
         {
             //Make a new InspectedField and add it to the list.
-            InspectedField iField = new InspectedField(methodName, label, obj, true, valueType);
+            InspectedField iField = new InspectedField(label, obj, true, valueType);
             inspectedParameters.Add(iField);
 
             return EditorGUILayout.ObjectField(label, obj, valueType, true);
@@ -664,14 +660,14 @@ public class MonoBehaviourCustomEditor : Editor
     /// <param name="oldValue"></param>
     /// <param name="inspectedParameters"></param>
     /// <returns></returns>
-    internal static object DrawComponent(InspectedField inspectedParameter, string methodName, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters)
+    internal static object DrawComponent(InspectedField inspectedParameter, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters)
     {
         UnityEngine.Component component = new UnityEngine.Component();
 
         if (inspectedParameter == null) // it's a newly add parameter for inspecting
         {
             //Make a new InspectedField and add it to the list.
-            InspectedField iField = new InspectedField(methodName, label, component, true, valueType);
+            InspectedField iField = new InspectedField(label, component, true, valueType);
             inspectedParameters.Add(iField);
 
             return EditorGUILayout.ObjectField(label, component, valueType, true);
@@ -702,12 +698,12 @@ public class MonoBehaviourCustomEditor : Editor
     /// <param name="valueType"></param>
     /// <param name="oldValue"></param>
     /// <returns></returns>
-    internal static object DrawEnum(InspectedField inspectedParameter, string methodName, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters)
+    internal static object DrawEnum(InspectedField inspectedParameter, string label, Type valueType, object oldValue, List<InspectedField> inspectedParameters)
     {
         if (inspectedParameter == null) // it's a newly add parameter for inspecting
         {
             //Make a new InspectedField and add it to the list.
-            InspectedField iField = new InspectedField(methodName, label, (Enum)Enum.GetValues(valueType).GetValue(0), true, valueType);
+            InspectedField iField = new InspectedField(label, (Enum)Enum.GetValues(valueType).GetValue(0), true, valueType);
             inspectedParameters.Add(iField);
 
             return EditorGUILayout.EnumFlagsField((Enum)Enum.GetValues(valueType).GetValue(0));
