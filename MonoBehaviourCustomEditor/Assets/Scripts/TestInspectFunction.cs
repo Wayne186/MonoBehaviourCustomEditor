@@ -5,6 +5,11 @@ public class TestInspectFunction : MonoBehaviour
     [SerializeField] GameObject gameObject;
     public int randomInt;
 
+    private void Start()
+    {
+        
+    }
+
     public enum TestEnum
     {
         Enum1,
@@ -19,6 +24,12 @@ public class TestInspectFunction : MonoBehaviour
     }
 
     [InspectFunction]
+    public void AnotherInspectFunction(GameObject obj, Collider col, Color color, Vector3 vector3, string str)
+    {
+        Debug.LogFormat("{0} {1} {2} {3} {4}", obj.name, col.name, color.ToString(), vector3.ToString(), str);
+    }
+
+    [InspectFunction]
     private void TryEnum(TestEnum e)
     {
         Debug.Log(e);
@@ -28,5 +39,10 @@ public class TestInspectFunction : MonoBehaviour
     private void NoArgs()
     {
         Debug.Log("No args");
+    }
+
+    public void NotInspecting()
+    {
+
     }
 }
