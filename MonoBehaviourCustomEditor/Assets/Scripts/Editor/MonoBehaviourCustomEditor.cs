@@ -47,7 +47,7 @@ public class InspectedField
 public class InspectedFunction
 {
     public const int MAXPARAMETERSCOUNT = 15;
-    internal string MethodName;
+    internal string FunctionName;
     internal bool IsInspected;
     private bool m_HasParameters;
     internal List<InspectedField> InspectedParameters;
@@ -77,7 +77,7 @@ public class InspectedFunction
     /// </summary>
     internal InspectedFunction()
     {
-        MethodName = "";
+        FunctionName = "";
         IsInspected = false;
         HasParameters = false;
     }
@@ -85,12 +85,12 @@ public class InspectedFunction
     /// <summary>
     /// Constructor, construct a InspectedMethod with parameters passed in.
     /// </summary>
-    /// <param name="methodName"></param>
+    /// <param name="functionName"></param>
     /// <param name="isInspected"></param>
     /// <param name="hasParameters"></param>
-    internal InspectedFunction(string methodName, bool isInspected, bool hasParameters)
+    internal InspectedFunction(string functionName, bool isInspected, bool hasParameters)
     {
-        MethodName = methodName;
+        FunctionName = functionName;
         IsInspected = isInspected;
         HasParameters = hasParameters;
     }
@@ -106,7 +106,7 @@ public class MonoBehaviourCustomEditor : Editor
     /// <summary>
     /// The list store all InspectedMethods info
     /// </summary>
-    List<InspectedFunction> InspectedMethods = new List<InspectedFunction>();
+    List<InspectedFunction> InspectedFunctions = new List<InspectedFunction>();
 
     /// <summary>
     /// Delegate for 
@@ -155,12 +155,12 @@ public class MonoBehaviourCustomEditor : Editor
         var type = target.GetType();
 
         //Reset all InspectedMethod and InspectedField status to not inspected
-        foreach (var inspectedMethod in InspectedMethods)
+        foreach (var inspectedFunction in InspectedFunctions)
         {
-            inspectedMethod.IsInspected = false;
-            if (inspectedMethod.InspectedParameters != null)
+            inspectedFunction.IsInspected = false;
+            if (inspectedFunction.InspectedParameters != null)
             {
-                foreach (var para in inspectedMethod.InspectedParameters)
+                foreach (var para in inspectedFunction.InspectedParameters)
                 {
                     para.IsInspected = false;
                 }
@@ -174,19 +174,19 @@ public class MonoBehaviourCustomEditor : Editor
             var attributes = methodInfo.GetCustomAttributes(typeof(InspectFunctionAttribute), true);
             if (attributes.Length > 0)
             {
-                InspectedFunction inspectedMethod = null;
-                foreach (var method in InspectedMethods)
+                InspectedFunction inspectedFunction = null;
+                foreach (var function in InspectedFunctions)
                 {
-                    if (method.MethodName.Equals(methodInfo.Name))
+                    if (function.FunctionName.Equals(methodInfo.Name))
                     {
-                        inspectedMethod = method;
-                        inspectedMethod.IsInspected = true;
+                        inspectedFunction = function;
+                        inspectedFunction.IsInspected = true;
                     }
                 }
-                if (inspectedMethod == null)
+                if (inspectedFunction == null)
                 {
-                    inspectedMethod = new InspectedFunction(methodInfo.Name, true, false);
-                    InspectedMethods.Add(inspectedMethod);
+                    inspectedFunction = new InspectedFunction(methodInfo.Name, true, false);
+                    InspectedFunctions.Add(inspectedFunction);
                 }
 
                 var passingParameter = new List<object>();
@@ -197,11 +197,11 @@ public class MonoBehaviourCustomEditor : Editor
                 var parameters = methodInfo.GetParameters();
                 if (parameters.Length > 0)
                 {
-                    inspectedMethod.HasParameters = true;
+                    inspectedFunction.HasParameters = true;
                     foreach (var para in parameters)
                     {
                         System.Object obj;
-                        if (DrawField(inspectedMethod.InspectedParameters, para.ParameterType, para.Name, out obj))
+                        if (DrawField(inspectedFunction.InspectedParameters, para.ParameterType, para.Name, out obj))
                         {
                             passingParameter.Add(obj);
                         }
@@ -212,7 +212,7 @@ public class MonoBehaviourCustomEditor : Editor
                     }
                 } else
                 {
-                    inspectedMethod.HasParameters = false;
+                    inspectedFunction.HasParameters = false;
                 }
                 EditorGUILayout.EndVertical();
                 EditorGUILayout.Space();
@@ -225,22 +225,22 @@ public class MonoBehaviourCustomEditor : Editor
         }
 
         //Remove all InspectedMethod that is not currently inspecting
-        for (int i = 0; i < InspectedMethods.Count; i++)
+        for (int i = 0; i < InspectedFunctions.Count; i++)
         {
-            if (!InspectedMethods[i].IsInspected)
+            if (!InspectedFunctions[i].IsInspected)
             {
-                InspectedMethods.RemoveAt(i);
+                InspectedFunctions.RemoveAt(i);
                 i--;
             }
         }
 
         //Remove all InspectedField that is not currently inspecting
-        foreach (var inspectedMethod in InspectedMethods)
+        foreach (var inspectedFunction in InspectedFunctions)
         {
-            if (inspectedMethod.HasParameters)
+            if (inspectedFunction.HasParameters)
             {
-                List<InspectedField> inspectedParameters = inspectedMethod.InspectedParameters;
-                for (int i = 0; i < inspectedMethod.InspectedParameters.Count; i++)
+                List<InspectedField> inspectedParameters = inspectedFunction.InspectedParameters;
+                for (int i = 0; i < inspectedFunction.InspectedParameters.Count; i++)
                 {
                     if (!inspectedParameters[i].IsInspected)
                     {
@@ -250,24 +250,6 @@ public class MonoBehaviourCustomEditor : Editor
                 }
             }
         }
-
-        /*
-        if (GUILayout.Button("CheckList"))
-        {
-            Debug.LogFormat("List has {0} Methods", InspectedMethods.Count);
-            foreach (var method in InspectedMethods)
-            {
-                Debug.LogFormat("---- {0} ----", method.MethodName);
-                if (method.HasParameters)
-                {
-                    Debug.LogFormat("Has {0} Parameters", method.InspectedParameters.Count);
-                    foreach (var para in method.InspectedParameters)
-                    {
-                        Debug.Log(para.Label);
-                    }
-                }
-            }
-        }*/
     }
 
     /// <summary>
